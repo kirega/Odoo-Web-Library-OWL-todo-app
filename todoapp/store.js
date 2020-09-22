@@ -1,7 +1,7 @@
 const { Component, Store } = owl;
 const { xml } = owl.tags;
 const { whenReady } = owl.utils;
-const { useRef, useDispatch, useStore } = owl.hooks;
+const { useRef, useDispatch, useState, useStore } = owl.hooks;
 
 // -------------------------------------------------------------------------
 // Store
@@ -39,8 +39,9 @@ const initialState = {
 const TASK_TEMPLATE = xml/* xml */ `
     <div class="task" t-att-class="props.task.isCompleted ? 'done' : ''">
         <input type="checkbox" t-att-checked="props.task.isCompleted"
+                t-att-id="props.task.id"
                 t-on-click="dispatch('toggleTask', props.task.id)"/>
-        <span><t t-esc="props.task.title"/></span>
+        <label t-att-for="props.task.id"><t t-esc="props.task.title"/></label>
         <span class="delete" t-on-click="dispatch('deleteTask', props.task.id)">🗑</span>
     </div>`;
 
@@ -61,6 +62,22 @@ const APP_TEMPLATE = xml/* xml */ `
                 <Task task="task"/>
             </t>
         </div>
+        <div class="task-panel" t-if="tasks.length">
+            <div class="task-counter">
+                <t t-esc="displayedTasks.length"/>
+                <t t-if="displayedTasks.length lt tasks.length">
+                    / <t t-esc="tasks.length"/>
+                </t>
+                task(s)
+            </div>
+            <div>
+                <span t-foreach="['all', 'active', 'completed']"
+                    t-as="f" t-key="f"
+                    t-att-class="{active: filter.value===f}"
+                    t-on-click="setFilter(f)"
+                    t-esc="f"/>
+            </div>
+        </div>
     </div>`;
 
 class App extends Component {
@@ -71,6 +88,18 @@ class App extends Component {
     tasks = useStore((state) => state.tasks);
     dispatch = useDispatch();
 
+    filter = useState({ value: "all" });
+
+    get displayedTasks() {
+        switch (this.filter.value) {
+            case "active": return this.tasks.filter(t => !t.isCompleted);
+            case "completed": return this.tasks.filter(t => t.isCompleted);
+            case "all": return this.tasks;
+        }
+    }
+    setFilter(filter) {
+        this.filter.value = filter;
+    }
     mounted() {
         this.inputRef.el.focus();
     }
