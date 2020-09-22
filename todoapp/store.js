@@ -84,12 +84,23 @@ class App extends Component {
     }
 }
 
+// Local storage fix for the todo list
+function makeStore() {
+    const localState = window.localStorage.getItem("todoapp");
+    const state = localState ? JSON.parse(localState) : initialState;
+    const store = new Store({ state, actions });
+    store.on("update", null, () => {
+        localStorage.setItem("todoapp", JSON.stringify(store.state));
+    });
+    return store;
+}
+
 // -------------------------------------------------------------------------
 // Setup code
 // -------------------------------------------------------------------------
 function setup() {
     owl.config.mode = "dev";
-    const store = new Store({ actions, state: initialState });
+    const store = makeStore();
     App.env.store = store;
     const app = new App();
     app.mount(document.body);
